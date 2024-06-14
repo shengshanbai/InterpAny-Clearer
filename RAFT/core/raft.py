@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from update import BasicUpdateBlock, SmallUpdateBlock
-from extractor import BasicEncoder, SmallEncoder
-from corr import CorrBlock, AlternateCorrBlock
+from .update import BasicUpdateBlock, SmallUpdateBlock
+from .extractor import BasicEncoder, SmallEncoder
+from .corr import CorrBlock, AlternateCorrBlock
 
 try:
     from utils.utils import bilinear_sampler, coords_grid, upflow8
@@ -14,8 +14,8 @@ try:
 except ImportError:
     from RAFT.core.utils.utils import bilinear_sampler, coords_grid, upflow8
 
-
     # dummy autocast for PyTorch < 1.6
+
     class autocast:
         def __init__(self, enabled):
             pass
@@ -52,13 +52,17 @@ class RAFT(nn.Module):
 
         # feature network, context network, and update block
         if args.small:
-            self.fnet = SmallEncoder(output_dim=128, norm_fn='instance', dropout=args.dropout)
-            self.cnet = SmallEncoder(output_dim=hdim + cdim, norm_fn='none', dropout=args.dropout)
+            self.fnet = SmallEncoder(
+                output_dim=128, norm_fn='instance', dropout=args.dropout)
+            self.cnet = SmallEncoder(
+                output_dim=hdim + cdim, norm_fn='none', dropout=args.dropout)
             self.update_block = SmallUpdateBlock(self.args, hidden_dim=hdim)
 
         else:
-            self.fnet = BasicEncoder(output_dim=256, norm_fn='instance', dropout=args.dropout)
-            self.cnet = BasicEncoder(output_dim=hdim + cdim, norm_fn='batch', dropout=args.dropout)
+            self.fnet = BasicEncoder(
+                output_dim=256, norm_fn='instance', dropout=args.dropout)
+            self.cnet = BasicEncoder(
+                output_dim=hdim + cdim, norm_fn='batch', dropout=args.dropout)
             self.update_block = BasicUpdateBlock(self.args, hidden_dim=hdim)
 
     def freeze_bn(self):
@@ -107,7 +111,8 @@ class RAFT(nn.Module):
         fmap1 = fmap1.float()
         fmap2 = fmap2.float()
         if self.args.alternate_corr:
-            corr_fn = AlternateCorrBlock(fmap1, fmap2, radius=self.args.corr_radius)
+            corr_fn = AlternateCorrBlock(
+                fmap1, fmap2, radius=self.args.corr_radius)
         else:
             corr_fn = CorrBlock(fmap1, fmap2, radius=self.args.corr_radius)
 
@@ -130,7 +135,8 @@ class RAFT(nn.Module):
 
             flow = coords1 - coords0
             with autocast(enabled=self.args.mixed_precision):
-                net, up_mask, delta_flow = self.update_block(net, inp, corr, flow)
+                net, up_mask, delta_flow = self.update_block(
+                    net, inp, corr, flow)
 
             # F(t+1) = F(t) + \Delta(t)
             coords1 = coords1 + delta_flow

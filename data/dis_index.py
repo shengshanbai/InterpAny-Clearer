@@ -1,14 +1,12 @@
-import sys
-
-sys.path.append('../RAFT/')
-sys.path.append('../RAFT/core')
+import sys  # noqa
 
 import cv2
 import torch
 import numpy as np
 from PIL import Image
-from raft import RAFT
+from RAFT.core.raft import RAFT
 from easydict import EasyDict as edict
+
 
 try:
     from utils import flow_viz
@@ -27,7 +25,8 @@ class FlowEstimator:
     def __init__(self, checkpoint, iters=20, device='cuda'):
         self.iters = iters
         self.device = device
-        args = edict({'mixed_precision': False, 'small': False, 'alternate_corr': False})
+        args = edict({'mixed_precision': False,
+                     'small': False, 'alternate_corr': False})
         model = torch.nn.DataParallel(RAFT(args))
         model.load_state_dict(torch.load(checkpoint))
         self.model = model.module
@@ -37,7 +36,8 @@ class FlowEstimator:
     @torch.no_grad()
     def batch_estimate_flow(self, img1, img2):
         # estimate the optical flow from img1 to img2
-        flow_low, flow_up = self.model(img1 * 255., img2 * 255., iters=20, test_mode=True)
+        flow_low, flow_up = self.model(
+            img1 * 255., img2 * 255., iters=20, test_mode=True)
         return flow_up
 
     @torch.no_grad()
@@ -51,8 +51,9 @@ class FlowEstimator:
         flow_low, flow_up = self.model(img1, img2, iters=20, test_mode=True)
         flow_rgb = self.viz(img1, flow_up)
         if visualize:
-            cv2.imshow('image', flow_rgb[:, :, [2, 1, 0]] / 255.0)
-            cv2.waitKey()
+            cv2.imwrite("./temp.jpg", flow_rgb[:, :, ::-1])
+            # cv2.imshow('image', flow_rgb[:, :, [2, 1, 0]] / 255.0)
+            # cv2.waitKey()
         return flow_up, flow_rgb
 
     def load_img(self, img_path):
@@ -73,11 +74,12 @@ class FlowEstimator:
 
 def cosine_project_ratio(array1, array2):
     # calculate the dot product of each pair of vectors in the two arrays
-    array_inner = array1[..., 0] * array2[..., 0] + array1[..., 1] * array2[..., 1]
+    array_inner = array1[..., 0] * array2[..., 0] + \
+        array1[..., 1] * array2[..., 1]
     # array1_mag = np.linalg.norm(array1, axis=1)
     array2_mag = np.linalg.norm(array2, axis=-1)
     array_cos_sim = array_inner / (array2_mag ** 2)
-
+    (v1 . v2)/(v2 . v2)
     return array_cos_sim
 
 
